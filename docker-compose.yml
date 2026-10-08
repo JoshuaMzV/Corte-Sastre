@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # 1. BUFFER DE INGESTA DE PEDIDOS (BD 1 - MongoDB NoSQL)
+  mongo-buffer:
+    image: mongo:7.0
+    container_name: cys_mongo_buffer
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin_buffer
+      MONGO_INITDB_ROOT_PASSWORD: BufferSecure2026!
+      MONGO_INITDB_DATABASE: pedidos_buffer
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - cys_network
+
+  # 2. BODEGA Y MERCANCIA (BD 2 y BD 3 - PostgreSQL 16 con Esquemas y Auditoría)
+  postgres-core:
+    image: postgres:16-alpine
+    container_name: cys_postgres_core
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres_admin
+      POSTGRES_PASSWORD: MasterAdminDB2026!
+      POSTGRES_DB: corte_y_sastre_db
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./db/init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - cys_network
+
+  # 3. LOCALSTACK (Emulador AWS: KMS, SQS, S3, Secrets Manager)
+  localstack:
+    image: localstack/localstack:3.0
+    container_name: cys_localstack
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4566:4566"
+    environment:
+      - SERVICES=kms,sqs,s3,secretsmanager
+      - AWS_DEFAULT_REGION=us-east-1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh
+    networks:
+      - cys_network
+
+  # 4. BACKEND API EN GOLANG (Microservicio Blindado)
+  backend-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cys_backend_api
+    restart: unless-stopped
+    ports:
+      - "0.0.0.0:8088:8088"
+    environment:
+      - PORT=8088
+      - PG_HOST=postgres-core
+      - PG_PORT=5432
+      - PG_USER=postgres_admin
+      - PG_PASS=MasterAdminDB2026!
+      - PG_DB=corte_y_sastre_db
+      - MONGO_URI=mongodb://admin_buffer:BufferSecure2026!@mongo-buffer:27017/pedidos_buffer?authSource=admin
+      - AWS_ENDPOINT=http://localstack:4566
+      - SQS_QUEUE_URL=http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/pedidos-buffer-queue
+    depends_on:
+      - mongo-buffer
+      - postgres-core
+      - localstack
+    networks:
+      - cys_network
+
+networks:
+  cys_network:
+    name: cys_isolated_net
+    driver: bridge
+
+volumes:
+  mongo_data:
+  pg_data:
+  localstack_data:

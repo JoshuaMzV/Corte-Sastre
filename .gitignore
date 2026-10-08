@@ -1,0 +1,32 @@
+# Binarios y compilados
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+backend/backend-api
+
+# Entornos y claves locales
+.env
+.env.*
+!.env.example
+
+# IDE y editores
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Logs y bases de datos locales
+*.log
+mongo_data/
+pg_data/
+localstack_data/

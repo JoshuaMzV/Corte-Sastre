@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explorador Multi-Base de Datos | Corte & Sastre</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-dim: #94a3b8;
+      --accent: #38bdf8;
+      --green: #22c55e;
+      --purple: #a855f7;
+      --amber: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; }
+    body { background-color: var(--bg); color: var(--text); padding: 1.2rem; min-height: 100vh; }
+    
+    .top-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.8rem; }
+    .header-left h1 { font-size: 1.35rem; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; }
+    .header-left p { font-size: 0.75rem; color: var(--text-dim); }
+    .nav-links { display: flex; gap: 0.6rem; }
+    .btn-nav { background: var(--card-bg); border: 1px solid var(--border); color: var(--text); text-decoration: none; padding: 0.45rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4rem; transition: all 0.2s; }
+    .btn-nav:hover, .btn-nav.active { background: var(--accent); color: #0b1120; border-color: var(--accent); }
+
+    .main-layout { display: grid; grid-template-columns: 280px 1fr; gap: 1.2rem; }
+    @media (max-width: 900px) { .main-layout { grid-template-columns: 1fr; } }
+
+    .sidebar { display: flex; flex-direction: column; gap: 1rem; }
+    .side-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; }
+    .side-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.4rem; }
+    
+    .table-btn { width: 100%; text-align: left; background: #0f172a; border: 1px solid var(--border); color: var(--text); padding: 0.6rem 0.8rem; border-radius: 6px; font-size: 0.78rem; font-family: monospace; cursor: pointer; display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.4rem; transition: all 0.15s; }
+    .table-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .table-btn.active { background: rgba(56, 189, 248, 0.15); border-color: var(--accent); color: var(--accent); font-weight: bold; }
+    .badge-schema { font-size: 0.65rem; padding: 0.15rem 0.4rem; border-radius: 4px; background: rgba(255,255,255,0.08); }
+
+    .content-area { display: flex; flex-direction: column; gap: 1rem; }
+    .table-header-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; }
+    .table-name-title { font-size: 1.1rem; color: #fff; font-weight: bold; font-family: monospace; display: flex; align-items: center; gap: 0.5rem; }
+    .table-meta { font-size: 0.78rem; color: var(--text-dim); }
+
+    .data-table-wrap { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; overflow-x: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.3); max-height: 70vh; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    th { text-align: left; padding: 0.6rem 0.8rem; background: #0f172a; color: var(--accent); border-bottom: 2px solid var(--border); position: sticky; top: 0; font-family: monospace; }
+    td { padding: 0.55rem 0.8rem; border-bottom: 1px solid rgba(51, 65, 85, 0.5); vertical-align: top; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+    .hash-val { font-family: monospace; color: #38bdf8; font-size: 0.72rem; }
+    .json-val { font-family: monospace; color: #cbd5e1; font-size: 0.7rem; max-width: 260px; word-break: break-all; }
+    .pill { display: inline-block; padding: 0.15rem 0.45rem; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
+    .pill-green { background: rgba(34, 197, 94, 0.15); color: var(--green); border: 1px solid var(--green); }
+    .pill-amber { background: rgba(245, 158, 11, 0.15); color: var(--amber); border: 1px solid var(--amber); }
+
+    .terminal-box { background: #000; border: 1px solid #1e293b; border-radius: 8px; padding: 0.8rem; font-family: monospace; font-size: 0.74rem; color: #a3e635; overflow-x: auto; margin-top: 0.5rem; }
+    .copy-btn { float: right; background: #1e293b; color: #cbd5e1; border: none; padding: 2px 6px; border-radius: 4px; cursor: pointer; font-size: 0.65rem; }
+    .copy-btn:hover { background: #334155; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER NAVEGACIÓN -->
+  <header class="top-header">
+    <div class="header-left">
+      <h1><i class="fa-solid fa-network-wired"></i> Explorador Multi-Base de Datos</h1>
+      <p>Corte & Sastre | Arquitectura de 3 Capas: PostgreSQL Core + MongoDB Buffer + LocalStack Cloud</p>
+    </div>
+    <nav class="nav-links">
+      <a href="/" class="btn-nav"><i class="fa-solid fa-mobile-screen"></i> Handheld</a>
+      <a href="/auditoria" class="btn-nav"><i class="fa-solid fa-shield-halved"></i> Auditoría Forense</a>
+      <a href="/explorador" class="btn-nav active"><i class="fa-solid fa-database"></i> Explorador Tablas</a>
+    </nav>
+  </header>
+
+  <div class="main-layout">
+    <!-- SIDEBAR: LISTA DE TABLAS -->
+    <aside class="sidebar">
+      
+      <!-- 1. POSTGRESQL -->
+      <div class="side-card">
+        <div class="side-title"><i class="fa-solid fa-database" style="color:#38bdf8;"></i> PostgreSQL (Core Vault)</div>
+        <button class="table-btn" onclick="cargarTabla('empleados_acl')">
+          <span>empleados_acl</span> <span class="badge-schema" style="color:#a855f7;">iam</span>
+        </button>
+        <button class="table-btn active" onclick="cargarTabla('camisas_catalogo')">
+          <span>camisas_catalogo</span> <span class="badge-schema">vault</span>
+        </button>
+        <button class="table-btn" onclick="cargarTabla('stock_inventario')">
+          <span>stock_inventario</span> <span class="badge-schema">wms</span>
+        </button>
+        <button class="table-btn" onclick="cargarTabla('ordenes_despacho')">
+          <span>ordenes_despacho</span> <span class="badge-schema">wms</span>
+        </button>
+        <button class="table-btn" onclick="cargarTabla('ordenes_detalle')">
+          <span>ordenes_detalle</span> <span class="badge-schema">wms</span>
+        </button>
+        <button class="table-btn" onclick="cargarTabla('logs_inmutables')">
+          <span>logs_inmutables</span> <span class="badge-schema" style="color:#22c55e;">worm</span>
+        </button>
+        <button class="table-btn" onclick="cargarTabla('proveedores')">
+          <span>proveedores</span> <span class="badge-schema">vault</span>
+        </button>
+        <button class="table-btn" onclick="cargarTabla('telas')">
+          <span>telas</span> <span class="badge-schema">vault</span>
+        </button>
+        <button class="table-btn" onclick="cargarTabla('estanterias')">
+          <span>estanterias</span> <span class="badge-schema">wms</span>
+        </button>
+      </div>
+
+      <!-- 2. MONGODB -->
+      <div class="side-card">
+        <div class="side-title"><i class="fa-brands fa-envira" style="color:#22c55e;"></i> MongoDB Buffer (DMZ)</div>
+        <button class="table-btn" onclick="cargarTabla('mongo_pedidos')">
+          <span>pedidos_ingesta</span> <span class="badge-schema">nosql</span>
+        </button>
+        <p style="font-size:0.68rem; color:#94a3b8; margin-top:0.4rem;">Buffer transitorio. Se purga automáticamente al transferirse a PostgreSQL.</p>
+      </div>
+
+      <!-- 3. LOCALSTACK -->
+      <div class="side-card">
+        <div class="side-title"><i class="fa-brands fa-aws" style="color:#f59e0b;"></i> LocalStack AWS Cloud</div>
+        <button class="table-btn" onclick="cargarTabla('localstack_sqs')">
+          <span>pedidos-buffer-queue</span> <span class="badge-schema">sqs</span>
+        </button>
+        <p style="font-size:0.68rem; color:#94a3b8; margin-top:0.4rem;">Cola de desacoplamiento asíncrono con cifrado SSE-SQS.</p>
+      </div>
+
+
+
+    </aside>
+
+    <!-- CONTENT: TABLA DE DATOS -->
+    <main class="content-area">
+      <div class="table-header-card">
+        <div>
+          <div class="table-name-title" id="lblTableName"><i class="fa-solid fa-table"></i> mercancia_vault.camisas_catalogo</div>
+          <div class="table-meta" id="lblTableMeta">Cargando registros...</div>
+        </div>
+        <button class="btn-nav" onclick="recargarTablaActual()"><i class="fa-solid fa-rotate"></i> Actualizar</button>
+      </div>
+
+      <div class="data-table-wrap">
+        <table id="dataTableGrid">
+          <thead id="dataThead"></thead>
+          <tbody id="dataTbody"></tbody>
+        </table>
+        <div id="loadingPlaceholder" style="text-align:center; padding:2rem; color:var(--text-dim);">
+          <i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Cargando datos en vivo del servidor...
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    let currentTable = 'camisas_catalogo';
+
+    window.addEventListener('DOMContentLoaded', () => {
+      cargarTabla('camisas_catalogo');
+    });
+
+    function recargarTablaActual() {
+      cargarTabla(currentTable);
+    }
+
+    async function cargarTabla(tablaId) {
+      currentTable = tablaId;
+
+      // Actualizar estilo botones sidebar
+      document.querySelectorAll('.table-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = Array.from(document.querySelectorAll('.table-btn')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(`'${tablaId}'`));
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const thead = document.getElementById('dataThead');
+      const tbody = document.getElementById('dataTbody');
+      const placeholder = document.getElementById('loadingPlaceholder');
+      const title = document.getElementById('lblTableName');
+      const meta = document.getElementById('lblTableMeta');
+
+      placeholder.style.display = 'block';
+      thead.innerHTML = '';
+      tbody.innerHTML = '';
+
+      try {
+        const res = await fetch(`/api/v1/explorador/datos?tabla=${tablaId}`);
+        const data = await res.json();
+        placeholder.style.display = 'none';
+
+        if (data.tipo === 'mongodb') {
+          title.innerHTML = `<i class="fa-brands fa-envira" style="color:#22c55e;"></i> ${data.tabla}`;
+          meta.innerHTML = `Buffer DMZ: <b>${data.total} documentos activos</b> | Política: <i>${data.politica}</i>`;
+          renderMongoView(data.documentos, thead, tbody);
+          return;
+        }
+
+        if (data.tipo === 'localstack') {
+          title.innerHTML = `<i class="fa-brands fa-aws" style="color:#f59e0b;"></i> SQS: ${data.cola}`;
+          meta.innerHTML = `Servicio: <b>AWS LocalStack SQS (Buffer de Desacoplamiento)</b>`;
+          renderLocalStackView(data.atributos, thead, tbody);
+          return;
+        }
+
+        // PostgreSQL
+        title.innerHTML = `<i class="fa-solid fa-table" style="color:#38bdf8;"></i> ${data.tabla}`;
+        meta.innerHTML = `Total registros: <b>${data.total}</b> (Límite 50) | Motor: PostgreSQL 16 (ISO 27001)`;
+
+        if (!data.columnas || data.columnas.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:1.5rem;">Tabla vacía.</td></tr>';
+          return;
+        }
+
+        // Render Head
+        let thRow = '<tr>';
+        data.columnas.forEach(col => {
+          thRow += `<th>${col}</th>`;
+        });
+        thRow += '</tr>';
+        thead.innerHTML = thRow;
+
+        // Render Rows
+        let rowsHtml = '';
+        data.datos.forEach(row => {
+          rowsHtml += '<tr>';
+          data.columnas.forEach(col => {
+            let val = row[col];
+            if (val === null || val === undefined) {
+              rowsHtml += '<td style="color:#64748b;">NULL</td>';
+            } else if (col.includes('hash')) {
+              rowsHtml += `<td class="hash-val" title="${val}">${String(val).substring(0, 16)}...</td>`;
+            } else if (col.includes('json') || typeof val === 'object') {
+              rowsHtml += `<td class="json-val">${JSON.stringify(val)}</td>`;
+            } else if (col === 'accion' || col === 'estado_nombre') {
+              rowsHtml += `<td><span class="pill pill-green">${val}</span></td>`;
+            } else if (col === 'codigo_estado') {
+              rowsHtml += `<td><span class="pill pill-amber">${val}</span></td>`;
+            } else {
+              rowsHtml += `<td>${val}</td>`;
+            }
+          });
+          rowsHtml += '</tr>';
+        });
+        tbody.innerHTML = rowsHtml;
+
+      } catch (err) {
+        placeholder.style.display = 'block';
+        placeholder.innerHTML = `<span style="color:#ef4444;"><i class="fa-solid fa-circle-exclamation"></i> Error cargando tabla: ${err.message}</span>`;
+      }
+    }
+
+    function renderMongoView(docs, thead, tbody) {
+      thead.innerHTML = '<tr><th>ID Buffer</th><th>Datos del Pedido (BSON/JSON)</th><th>Estado</th></tr>';
+      if (!docs || docs.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="3" style="text-align:center; padding:2rem;">
+              <i class="fa-solid fa-shield-halved" style="color:#22c55e; font-size:1.8rem;"></i><br><br>
+              <b>Buffer Vacío (0 documentos retenidos)</b><br>
+              <span style="font-size:0.75rem; color:#94a3b8;">
+                Todos los pedidos han sido procesados y purgados por el Worker hacia PostgreSQL.<br>
+                Garantía de seguridad: <b>Zero Data Retention</b> en zona no confiable.
+              </span>
+            </td>
+          </tr>`;
+        return;
+      }
+      let html = '';
+      docs.forEach(d => {
+        html += `<tr><td><code>${d._id}</code></td><td class="json-val">${JSON.stringify(d)}</td><td><span class="pill pill-amber">En Buffer</span></td></tr>`;
+      });
+      tbody.innerHTML = html;
+    }
+
+    function renderLocalStackView(attrs, thead, tbody) {
+      thead.innerHTML = '<tr><th>Atributo AWS SQS</th><th>Valor en Nube Emulada</th><th>Función Arquitectónica</th></tr>';
+      const descMap = {
+        ApproximateNumberOfMessages: "Mensajes en espera (0 = Todo procesado en tiempo real)",
+        ApproximateNumberOfMessagesNotVisible: "Mensajes en vuelo siendo consumidos por el worker Go",
+        ApproximateNumberOfMessagesDelayed: "Mensajes con retraso programado",
+        CreatedTimestamp: "Fecha y hora de creación de la cola SQS",
+        QueueArn: "ARN oficial de Amazon Web Services (SQS)",
+        VisibilityTimeout: "Tiempo de bloqueo (30s) para evitar que dos workers procesen el mismo pedido",
+        SqsManagedSseEnabled: "Cifrado del lado del servidor (SSE-SQS) activo"
+      };
+      let html = '';
+      for (const [key, val] of Object.entries(attrs || {})) {
+        html += `<tr>
+          <td><b style="color:#f59e0b;"><i class="fa-solid fa-cloud-arrow-down"></i> ${key}</b></td>
+          <td><code>${val}</code></td>
+          <td style="color:#cbd5e1; font-size:0.75rem;">${descMap[key] || 'Métrica operativa AWS Cloud'}</td>
+        </tr>`;
+      }
+      tbody.innerHTML = html;
+    }
+  </script>
+</body>
+</html>
