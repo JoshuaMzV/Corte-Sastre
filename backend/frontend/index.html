@@ -35,18 +35,18 @@
       <div class="lock-date" id="lockDate">Miércoles, 16 de septiembre</div>
     </div>
 
-    <!-- Huella / Face ID directo -->
-    <div class="lock-bio-action" onclick="attemptBiometricAuth()">
+    <!-- Acción de desbloqueo -->
+    <div class="lock-bio-action" onclick="openPinModal()">
       <div class="bio-pulse-ring">
-        <i class="fa-solid fa-fingerprint"></i>
+        <i class="fa-solid fa-user-lock"></i>
       </div>
-      <span>Desbloqueo Biométrico</span>
+      <span>Ingresar al Sistema</span>
     </div>
 
     <!-- Deslizar hacia arriba -->
     <div class="lock-swipe-area" onclick="openPinModal()">
       <div class="swipe-arrow"><i class="fa-solid fa-chevron-up"></i></div>
-      <span class="swipe-hint">Desliza para desbloquear</span>
+      <span class="swipe-hint">Toca o desliza para ingresar</span>
       <div class="android-home-bar"></div>
     </div>
 
@@ -73,13 +73,10 @@
           </div>
         </div>
 
-        <!-- PANTALLA PASO 2: PUNTOS DE PIN (OCULTO AL INICIO) -->
+        <!-- PANTALLA PASO 2: PUNTOS DE PIN (DINÁMICO, NO REVELA TAMAÑO) -->
         <div id="authPinStepBox" class="pin-dots-step-wrap hidden">
-          <div class="dots-row" id="pinDotsRow">
-            <div class="p-dot"></div>
-            <div class="p-dot"></div>
-            <div class="p-dot"></div>
-            <div class="p-dot"></div>
+          <div class="dots-row dynamic-pin-row" id="pinDotsRow">
+            <span class="pin-placeholder-txt">Digita tu clave</span>
           </div>
         </div>
 

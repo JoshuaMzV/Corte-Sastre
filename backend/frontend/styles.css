@@ -310,8 +310,17 @@ html, body {
 .dots-row {
   display: flex;
   justify-content: center;
-  gap: 1.1rem;
+  align-items: center;
+  gap: 0.85rem;
   margin-bottom: 1.5rem;
+  min-height: 24px;
+}
+
+.pin-placeholder-txt {
+  font-size: 0.82rem;
+  color: #64748b;
+  letter-spacing: 0.5px;
+  user-select: none;
 }
 
 .p-dot {

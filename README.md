@@ -33,32 +33,32 @@
 ## 📐 2. Arquitectura de Tres Capas ("Zero Trust Data Tiering")
 
 ```mermaid
-flowchart LR
+flowchart TD
     subgraph Zona1["1. Zona No Confiable (Borde)"]
-        HH["📱 Handheld PWA Móvil\n(iOS / Android)\n• PIN + 2FA Telegram\n• TLS 1.3"]
+        HH["📱 Handheld PWA Móvil (iOS / Android)<br/>• Identificación de Operador + PIN<br/>• 2FA Fuera de Banda (Telegram)<br/>• TLS 1.3 Cifrado Punto a Punto"]
     end
 
-    subgraph Zona2["2. DMZ (Buffer Volátil)"]
-        API["⚙️ API Gateway (Golang/Gin)\n• Consultas Parametrizadas\n• Filtrado Anti-Leak"]
-        BD1[("🍃 BD 1: MongoDB 7.0\nBuffer pedidos_ingesta\n(Zero Data Retention)")]
-        SQS["☁️ LocalStack AWS SQS\n(pedidos-buffer-queue)"]
+    subgraph Zona2["2. DMZ (Buffer Volátil Perimetral)"]
+        API["⚙️ API Gateway (Golang / Gin)<br/>• Consultas Parametrizadas Anti-SQLi<br/>• Filtrado Estricto Anti-Data-Leak"]
+        BD1[("🍃 BD 1: MongoDB 7.0 (Buffer Ingesta)<br/>• Colección: pedidos_ingesta<br/>• Política: Zero Data Retention")]
+        SQS["☁️ AWS SQS Emulado (LocalStack)<br/>• Cola: pedidos-buffer-queue"]
     end
 
     subgraph Zona3["3. Zona Blindada (Red Interna Aislada)"]
-        Worker["🔄 Worker Seguro (PULL Pattern)\n• Transacción ACID + Purga DMZ"]
-        BD2[("📦 BD 2: Bodega WMS (PostgreSQL)\n• 10 Estados Logísticos\n• CHECK stock >= 0")]
-        BD3[("💎 BD 3: Crown Jewels (PostgreSQL)\n• Catálogo, Costos y Telas\n• Aislamiento Total")]
-        WORM[("🛡️ Ledger WORM (PostgreSQL)\n• Triggers Anti-Modificación\n• Hash Chaining SHA-256")]
+        Worker["🔄 Worker Asíncrono Seguro (PULL Pattern)<br/>• Transacción ACID + Purga DMZ"]
+        BD2[("📦 BD 2: Bodega WMS (PostgreSQL 16)<br/>• 10 Estados Logísticos Oficiales<br/>• Restricción CHECK stock >= 0")]
+        BD3[("💎 BD 3: Crown Jewels (PostgreSQL 16)<br/>• Catálogo Maestro, Costos y Fórmulas<br/>• Sin Exposición Externa")]
+        WORM[("🛡️ Ledger WORM (PostgreSQL 16)<br/>• Triggers Anti-UPDATE / Anti-DELETE<br/>• Encadenamiento SHA-256 (Hash Chaining)")]
     end
 
-    HH -->|"POST /pedidos"| API
-    API -->|"Ingesta transitoria"| BD1
-    API -->|"Encola ID"| SQS
-    SQS -->|"PULL"| Worker
-    BD1 -.->|"Lee y PURGA"| Worker
-    Worker -->|"Commit"| BD2
-    BD2 <-->|"Consulta reglas"| BD3
-    Worker -->|"Firma bloque"| WORM
+    HH -->|"1. POST /api/v1/pedidos (HTTPS)"| API
+    API -->|"2. Deposita preorden volátil"| BD1
+    API -->|"3. Notifica mensaje SQS"| SQS
+    SQS -->|"4. Consumo PULL"| Worker
+    Worker -->|"5. Extrae y PURGA buffer"| BD1
+    Worker -->|"6. Registra despacho en Bodega"| BD2
+    BD2 <-->|"7. Valida disponibilidad y reglas"| BD3
+    Worker -->|"8. Sella bloque inmutable SHA-256"| WORM
 ```
 
 ### Principios Fundamentales de Seguridad
@@ -103,18 +103,7 @@ flowchart LR
 
 ---
 
-## 👥 4. Matriz de Control de Acceso (IAM & ACL)
-
-| Código Empleado | Nombre | Rol | Sedes Autorizadas | PIN Acceso | 2FA Telegram |
-| :---: | :--- | :--- | :--- | :---: | :---: |
-| `8840219` | Joshua Méndez | Supervisor General & Auditor | Todas las sedes (Matriz, Z10, Miraflores, Cayalá) | `8840` | Requerido |
-| `103` | Elías Marquirez | Jefe de Bodega Central | Bodega Central (Matriz) | `5678` | Requerido |
-| `101` | Esteban Salic | Vendedor de Piso | Bodega Central, Zona 10 | `4321` | Requerido |
-| `201` | Carlos Repartidor | Piloto Repartidor COD | Bodega Central, Rutas Metropolitanas | `9900` | Requerido |
-
----
-
-## 🚀 5. Puesta en Marcha Rápida (Local)
+## 🚀 4. Puesta en Marcha Rápida (Local)
 
 ### Requisitos Previos
 * Docker y Docker Compose instalados.
@@ -140,7 +129,7 @@ docker compose up -d --build
 
 ---
 
-## 🔍 6. Verificación Criptográfica de Auditoría
+## 🔍 5. Verificación Criptográfica de Auditoría
 Para comprobar matemáticamente que ningún registro ha sido manipulado:
 ```bash
 docker exec -it cys_postgres_core psql -U postgres_admin -d corte_y_sastre_db -c "SELECT * FROM auditoria_core.verificar_integridad();"

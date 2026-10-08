@@ -195,14 +195,9 @@ function pressKey(digit) {
       }
     }
   } else if (authCurrentStep === "PIN") {
-    if (enteredPin.length < 4) {
+    if (enteredPin.length < 12) {
       enteredPin += digit;
       updateDots();
-
-      // AUTO-VALIDACIÓN AL 4TO DÍGITO
-      if (enteredPin.length === 4) {
-        setTimeout(validatePin, 120);
-      }
     }
   } else if (authCurrentStep === "TELEGRAM_2FA") {
     if (enteredOtp.length < 6) {
@@ -251,8 +246,10 @@ function pressEnterOrCheck() {
   if (authCurrentStep === "WORKER_ID") {
     submitWorkerCode();
   } else if (authCurrentStep === "PIN") {
-    if (enteredPin.length === 4) {
+    if (enteredPin.length > 0) {
       validatePin();
+    } else {
+      showPinError("Digita tu PIN de acceso y presiona ✔.");
     }
   } else if (authCurrentStep === "TELEGRAM_2FA") {
     if (enteredOtp.length === 6) {
@@ -313,21 +310,25 @@ function submitWorkerCode() {
   if (pBox) pBox.classList.remove("hidden");
   if (tgBox) tgBox.classList.add("hidden");
   if (title) title.textContent = `Hola, ${emp.nombre}`;
-  if (sub) sub.textContent = `${emp.rol} — Ingresa tu PIN de 4 dígitos`;
+  if (sub) sub.textContent = `${emp.rol} — Ingresa tu PIN y presiona ✔`;
   if (btn) btn.textContent = "Atrás";
 
   updateDots();
 }
 
 function updateDots() {
-  const dots = document.querySelectorAll("#pinDotsRow .p-dot");
-  dots.forEach((d, idx) => {
-    if (idx < enteredPin.length) {
-      d.classList.add("filled");
-    } else {
-      d.classList.remove("filled");
+  const row = document.getElementById("pinDotsRow");
+  if (!row) return;
+  row.innerHTML = "";
+  if (enteredPin.length === 0) {
+    row.innerHTML = '<span class="pin-placeholder-txt">Digita tu clave</span>';
+  } else {
+    for (let i = 0; i < enteredPin.length; i++) {
+      const dot = document.createElement("div");
+      dot.className = "p-dot filled";
+      row.appendChild(dot);
     }
-  });
+  }
 }
 
 function validatePin() {
@@ -522,7 +523,7 @@ function handleAuthCancelOrBack() {
     if (pBox) pBox.classList.remove("hidden");
     if (tgBox) tgBox.classList.add("hidden");
     if (title && authenticatedWorker) title.textContent = `Hola, ${authenticatedWorker.nombre}`;
-    if (sub && authenticatedWorker) sub.textContent = `${authenticatedWorker.rol} — Ingresa tu PIN de 4 dígitos`;
+    if (sub && authenticatedWorker) sub.textContent = `${authenticatedWorker.rol} — Ingresa tu PIN y presiona ✔`;
     updateDots();
     clearPinError();
   } else if (authCurrentStep === "PIN") {
@@ -533,15 +534,7 @@ function handleAuthCancelOrBack() {
 }
 
 function attemptBiometricAuth() {
-  const joshua = EMPLOYEES_DB["102"];
-  if (joshua && joshua.sedes_autorizadas.includes(activeLocation.id)) {
-    authenticatedWorker = joshua;
-    enteredWorkerCode = "102";
-    openPinModal();
-    startTelegram2FAStep();
-  } else {
-    openPinModal();
-  }
+  openPinModal();
 }
 
 // Soporte teclado físico de computadora
@@ -591,6 +584,7 @@ function unlockToMobileApp() {
 function lockTerminal() {
   document.getElementById("mobileApp").classList.add("hidden");
   document.getElementById("lockscreen").classList.remove("hidden");
+  resetAuthFlow();
   closePinModal();
   const opHeader = document.getElementById("currentOperatorName");
   if (opHeader) {
