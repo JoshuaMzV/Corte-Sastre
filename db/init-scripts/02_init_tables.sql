@@ -3,6 +3,20 @@
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
+-- ESQUEMA 0: IDENTIDAD Y CONTROL DE ACCESO (IAM + ACL)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS seguridad_iam.empleados_acl (
+    id SERIAL PRIMARY KEY,
+    codigo_empleado VARCHAR(50) UNIQUE NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    rol VARCHAR(80) NOT NULL,
+    sedes_autorizadas TEXT[] NOT NULL,
+    pin_hash VARCHAR(100) NOT NULL,
+    estado VARCHAR(20) DEFAULT 'ACTIVO',
+    creado_en TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ----------------------------------------------------------------------------
 -- ESQUEMA 1: MERCANCÍA (EL NICHO DEL NEGOCIO - MÁXIMA CONFIDENCIALIDAD)
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS mercancia_vault.proveedores (
@@ -65,7 +79,9 @@ CREATE TABLE IF NOT EXISTS bodega_wms.ordenes_despacho (
     id_pedido_origen VARCHAR(100) NOT NULL, -- ID que provino de MongoDB Buffer
     cliente_nombre VARCHAR(150) NOT NULL,
     cliente_direccion TEXT NOT NULL,
-    estado VARCHAR(30) NOT NULL DEFAULT 'PENDIENTE_PICKING', -- PENDIENTE_PICKING, EN_EMPAQUE, DESPACHADO, ENTREGADO
+    estado VARCHAR(50) NOT NULL DEFAULT 'Solicitado',
+    codigo_estado INT NOT NULL DEFAULT 1,
+    estado_nombre VARCHAR(80) NOT NULL DEFAULT 'Solicitado',
     operador_asignado VARCHAR(100),
     creado_en TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     despachado_en TIMESTAMP WITH TIME ZONE
@@ -171,10 +187,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- TRIGGER DE INMUTABILIDAD WORM (BLOQUEO ESTRICTO DE UPDATE Y DELETE)
+CREATE OR REPLACE FUNCTION auditoria_core.bloquear_alteracion_worm()
+RETURNS TRIGGER AS $$
+BEGIN
+    RAISE EXCEPTION '[SEGURIDAD CRÍTICA] Violación de Inmutabilidad WORM: Los registros de auditoría no pueden ser modificados ni eliminados.';
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS tg_bloqueo_modificacion_worm ON auditoria_core.logs_inmutables;
+CREATE TRIGGER tg_bloqueo_modificacion_worm
+BEFORE UPDATE OR DELETE ON auditoria_core.logs_inmutables
+FOR EACH ROW EXECUTE FUNCTION auditoria_core.bloquear_alteracion_worm();
+
 -- ASIGNAR PERMISOS AL USUARIO DE LA APLICACIÓN
+GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA seguridad_iam TO app_backend_user;
 GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA bodega_wms TO app_backend_user;
 GRANT SELECT ON ALL TABLES IN SCHEMA mercancia_vault TO app_backend_user;
 GRANT SELECT, INSERT ON auditoria_core.logs_inmutables TO app_backend_user;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA seguridad_iam TO app_backend_user;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA bodega_wms TO app_backend_user;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA auditoria_core TO app_backend_user;
 GRANT EXECUTE ON FUNCTION auditoria_core.registrar_evento TO app_backend_user;

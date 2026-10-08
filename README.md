@@ -129,8 +129,44 @@ docker compose up -d --build
 
 ---
 
-## 🔍 5. Verificación Criptográfica de Auditoría
-Para comprobar matemáticamente que ningún registro ha sido manipulado:
+## 🗄️ 5. Especificación y Acceso a las 3 Bases de Datos Locales
+
+El archivo `docker-compose.yml` inicializa automáticamente todos los esquemas, tablas, datos maestros y colas al arrancar por primera vez:
+
+### A. PostgreSQL 16 (`postgres-core` | Puerto Host: 5433 / Interno: 5432)
+* **Base de datos:** `corte_y_sastre_db`
+* **Credenciales:** Usuario `postgres_admin` | Contraseña `MasterAdminDB2026!`
+* **Esquemas Aprovisionados (`db/init-scripts/`):**
+  * `seguridad_iam`: `empleados_acl` (Control de acceso basado en roles y sedes autorizadas).
+  * `mercancia_vault`: `camisas_catalogo`, `proveedores`, `telas` (Catálogo confidencial de lujo y costos).
+  * `bodega_wms`: `estanterias`, `stock_inventario`, `ordenes_despacho`, `ordenes_detalle` (Gestión logística de bodega con 10 estados).
+  * `auditoria_core`: `logs_inmutables` (Ledger con triggers WORM y encadenamiento SHA-256).
+* **Comando para ingresar por consola:**
+  ```bash
+  docker exec -it cys_postgres_core psql -U postgres_admin -d corte_y_sastre_db
+  ```
+
+### B. MongoDB 7.0 (`mongo-buffer` | Puerto: 27017)
+* **Base de datos:** `pedidos_buffer`
+* **Colección auto-creada (`db/mongo-init/`):** `pedidos_ingesta` (Buffer DMZ volátil con política Zero Data Retention).
+* **Credenciales:** Usuario `admin_buffer` | Contraseña `BufferSecure2026!` (authSource: `admin`)
+* **Comando para ingresar por consola:**
+  ```bash
+  docker exec -it cys_mongo_buffer mongosh -u admin_buffer -p BufferSecure2026! --authenticationDatabase admin pedidos_buffer
+  ```
+
+### C. LocalStack AWS Emulado (`localstack` | Puerto: 4566)
+* **Servicios Activos:** AWS SQS, AWS KMS, AWS S3, AWS Secrets Manager.
+* **Cola auto-aprovisionada (`localstack/init-aws.sh`):** `pedidos-buffer-queue`
+* **Comando para inspeccionar la cola SQS:**
+  ```bash
+  docker exec -it cys_localstack awslocal sqs get-queue-attributes --queue-url http://sqs.us-east-1.localhost.localstack.cloud:4566/000000000000/pedidos-buffer-queue --attribute-names All
+  ```
+
+---
+
+## 🔍 6. Verificación Criptográfica de Auditoría
+Para comprobar matemáticamente que ningún registro ha sido manipulado en el Ledger WORM:
 ```bash
 docker exec -it cys_postgres_core psql -U postgres_admin -d corte_y_sastre_db -c "SELECT * FROM auditoria_core.verificar_integridad();"
 ```
