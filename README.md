@@ -22,6 +22,13 @@
 
 ---
 
+## 📚 Documentación del Proyecto
+* [📘 Documentación Técnica Ágil (Scrum, Sprints, DoD y Arquitectura)](docs/DOCUMENTACION_TECNICA.md)
+* [📱 Manual de Usuario (Guía Operativa Móvil PWA, Despacho y Auditoría)](docs/MANUAL_DE_USUARIO.md)
+* [🛡️ Arquitectura de Ciberseguridad y Trazabilidad Textil](docs/ARQUITECTURA_SEGURIDAD.md)
+
+---
+
 ## 👔 1. Modelo de Negocio y Segmento
 **Corte & Sastre** es una empresa guatemalteca especializada en la **confección y distribución de camisería masculina de lujo y sastrería a medida (*Bespoke Tailoring*)**.
 * **Segmento:** Sector corporativo de alta dirección, profesionales y diplomáticos en zonas comerciales prémium (Zona 10, Zona 14, Plaza Fontabella, Paseo Cayalá).
