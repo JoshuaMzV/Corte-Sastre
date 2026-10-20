@@ -1034,8 +1034,8 @@ func handleEnviarTelegram2FA(c *gin.Context) {
 		tokenToUse = getEnv("TELEGRAM_BOT_TOKEN", "8908564707:AAEm6qRDcCggWns5QnTQ3YoqIyuGMhQuzho")
 	}
 	chatToUse := req.ChatID
-	if chatToUse == "" {
-		chatToUse = getEnv("TELEGRAM_CHAT_ID", "1720695515")
+	if chatToUse == "" || chatToUse == "1720695515" {
+		chatToUse = getEnv("TELEGRAM_CHAT_ID", "-5181009996")
 	}
 
 	telegramSent := false

@@ -49,7 +49,11 @@ let enteredOtp = "";
 let currentGeneratedOtp = "";
 let authenticatedWorker = null;
 let telegramBotToken = localStorage.getItem("cys_tg_bot_token") || "8908564707:AAEm6qRDcCggWns5QnTQ3YoqIyuGMhQuzho";
-let telegramChatId = localStorage.getItem("cys_tg_chat_id") || "1720695515";
+let telegramChatId = localStorage.getItem("cys_tg_chat_id");
+if (!telegramChatId || telegramChatId === "1720695515") {
+  telegramChatId = "-5181009996";
+  localStorage.setItem("cys_tg_chat_id", telegramChatId);
+}
 
 let sucursalesList = [];
 let activeLocation = {
